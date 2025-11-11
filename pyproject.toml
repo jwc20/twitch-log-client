@@ -1,14 +1,10 @@
 [project]
-name = "twitch-chat-archive"
+name = "twitch-log-client"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
-    "flask>=3.1.0",
-    "fschat[model-worker,webui]>=0.2.36",
-    "guidance>=0.2.0rc1",
-    "psycopg2-binary>=2.9.10",
-    "python-dotenv>=1.0.1",
-    "tnr>=1.4.50",
+    "python-dateutil>=2.9.0.post0",
+    "requests>=2.32.5",
 ]
