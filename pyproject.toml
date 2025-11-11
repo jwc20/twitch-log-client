@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "falcon>=4.2.0",
+    "fastapi[standard]>=0.121.1",
     "python-dateutil>=2.9.0.post0",
     "requests>=2.32.5",
 ]
