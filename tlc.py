@@ -26,8 +26,9 @@ class ChatMessage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     timestamp = models.DateTimeField(blank=True, null=True)
     channel_name = models.CharField(max_length=100)
-    username = models.CharField(max_length=100)
-    message = models.TextField()
+    username = models.CharField(max_length=100, blank=True, null=True)
+    message_text = models.TextField(blank=True, null=True)
+    message_type = models.CharField(max_length=100)
 
 
 @app.route("/")
