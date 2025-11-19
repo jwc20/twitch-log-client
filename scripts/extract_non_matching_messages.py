@@ -21,6 +21,8 @@ settings.configure(USE_TZ=True, TIME_ZONE="UTC")
 filename = Path("./example/sodapoppin-316092067675.log")
 
 
+chat_message_pattern = r"^\[(\d{2}:\d{2}:\d{2})\]\s+(\w+):\s+(.+)$"
+
 patterns = {
     "stream_live": re.compile(r"^\[(\d{2}:\d{2}:\d{2})\]\s+(\w+)\s+is live!$"),
     "sub_basic": re.compile(
@@ -75,7 +77,6 @@ patterns = {
     ),
 }
 
-
 pattern_counts = {
     "stream_live": 0,
     "sub_basic": 0,
@@ -98,6 +99,7 @@ pattern_counts = {
     "chat_message_foreign": 0,
     "no_match": 0,
 }
+
 
 # Username extraction mapping: pattern_name -> list of indices where usernames are
 username_indices = {
@@ -150,89 +152,41 @@ non_chat_patterns = [
 ]
 
 
-def extract_usernames(pattern_name, match_groups):
-    """Extract usernames from matched groups based on pattern type"""
-    if pattern_name not in username_indices:
-        return []
+def extract_non_matching_message_to_file():
+    try:
+        with (
+            open(filename, "r", encoding="utf-8") as r,
+            open("non_matching_messages.txt", "w", encoding="utf-8") as w,
+        ):
+            data = [line for line in r][1:]
 
-    indices = username_indices[pattern_name]
-    usernames = []
-
-    for idx in indices:
-        if idx < len(match_groups) and match_groups[idx]:
-            usernames.append(match_groups[idx])
-
-    return usernames
-
-
-def store_db(created_at, timestamp, channel_name, username, message_text, message_type):
-    cursor.execute(
-        "INSERT INTO tlc_chatmessage (created_at, timestamp, channel_name, username, message_text, message_type) VALUES (?, ?, ?, ?, ?, ?)",
-        (created_at, timestamp, channel_name, username, message_text, message_type),
-    )
-    conn.commit()
-
-
-def add_example_data():
-    print(f"Adding example data, started at {timezone.now().isoformat()}")
-    with open(filename, "r", encoding="utf-8") as f:
-        data = [line for line in f]
-        stream_date = data[0].split("at ")[1].strip().split(" ")[0]
-        print(f"stream date: {stream_date}")
-
-        try:
-            for item in data[2:]:
+            for item in data:
                 message = item.strip()
+                matched = False
 
                 for pattern_name, pattern in patterns.items():
-                    match = pattern.match(message)
-                    if match:
+                    if pattern.match(message):
                         pattern_counts[pattern_name] += 1
-                        timestamp_str = f"{stream_date} {match.group(1)}"
-                        naive_timestamp = datetime.strptime(
-                            timestamp_str, "%Y-%m-%d %H:%M:%S"
-                        )
-                        aware_timestamp = timezone.make_aware(naive_timestamp)
-
-                        usernames = extract_usernames(pattern_name, match.groups())
-
-                        if pattern_name == "chat_message":
-                            message_text = match.group(3)
-                        elif pattern_name == "chat_message_foreign":
-                            message_text = match.group(3) + match.group(4)
-                        else:
-                            message_text = match.string.split("] ")[1].strip()
-
-                        store_db(
-                            created_at=timezone.now(),
-                            timestamp=aware_timestamp,
-                            channel_name="sodapoppin",
-                            username=usernames[0] if usernames else None,
-                            message_text=message_text,
-                            message_type=pattern_name,
-                        )
+                        matched = True
                         break
 
-                else:
-                    print(f"Failed to match: {message}")
+                if not matched:
+                    pattern_counts["no_match"] += 1
+                    w.write(message)
+                    w.write("\n")
 
-        except Exception as e:
-            print(e)
+    except Exception as e:
+        print(f"Error: {e}")
 
-    print(f"finished at {timezone.now().isoformat()}")
+    print(pattern_counts)
+
     return
 
 
-def delete_all():
-    print("Deleting all data...")
-    cursor.execute("delete from tlc_chatmessage")
-    conn.commit()
-    return
 
 
 def main():
-    # delete_all()
-    add_example_data()
+    extract_non_matching_message_to_file()
 
 
 if "__main__" == __name__:
