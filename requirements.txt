@@ -10,7 +10,9 @@ anyio==4.11.0
     #   starlette
     #   watchfiles
 asgiref==3.10.0
-    # via django
+    # via
+    #   django
+    #   django-browser-reload
 black==25.11.0
     # via nanodjango
 certifi==2025.11.12
@@ -30,8 +32,11 @@ click==8.3.0
     #   uvicorn
 django==5.2.8
     # via
+    #   django-browser-reload
     #   django-ninja
     #   nanodjango
+django-browser-reload==1.21.0
+    # via twitch-log-client (pyproject.toml)
 django-ninja==1.5.0
     # via nanodjango
 dnspython==2.8.0
@@ -107,7 +112,9 @@ python-dateutil==2.9.0.post0
     #   twitch-log-client (pyproject.toml)
     #   visidata
 python-dotenv==1.2.1
-    # via uvicorn
+    # via
+    #   twitch-log-client (pyproject.toml)
+    #   uvicorn
 python-multipart==0.0.20
     # via fastapi
 pytokens==0.3.0
@@ -172,8 +179,6 @@ uvicorn==0.38.0
 uvloop==0.22.1
     # via uvicorn
 visidata==3.3
-    # via twitch-log-client (pyproject.toml)
-watchdog==6.0.0
     # via twitch-log-client (pyproject.toml)
 watchfiles==1.1.1
     # via uvicorn
