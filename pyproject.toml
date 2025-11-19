@@ -7,6 +7,9 @@ requires-python = ">=3.13"
 dependencies = [
     "falcon>=4.2.0",
     "fastapi[standard]>=0.121.1",
+    "nanodjango>=0.12.2",
     "python-dateutil>=2.9.0.post0",
     "requests>=2.32.5",
+    "sqlmodel>=0.0.27",
+    "visidata>=3.3",
 ]
