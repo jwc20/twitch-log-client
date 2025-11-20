@@ -1,12 +1,8 @@
 from nanodjango import Django
 from django.db import models
-from django.utils import timezone
 
-from datetime import datetime
-from pathlib import Path
 from dotenv import load_dotenv
 import os
-import re
 
 load_dotenv()
 
@@ -33,17 +29,12 @@ class ChatMessage(models.Model):
 
 @app.route("/")
 def index(request):
-    return app.render(request, "index.html")
-
-
-app.templates = {
-    "index.html": """
-<!DOCTYPE html>
-<html>
-<head><title>Index Page</title></head>
-<body>
-    <h1>Index Page</h1>
-</body>
-</html>
-""".strip(),
-}
+    return app.render(
+        request,
+        "index.html",
+        {
+            "messages": ChatMessage.objects.raw(
+                "SELECT id, timestamp, username, message_text FROM tlc_chatmessage ORDER BY created_at DESC LIMIT 100"
+            )
+        },
+    )

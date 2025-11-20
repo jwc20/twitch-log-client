@@ -1,8 +1,6 @@
-from django.utils import timezone
 from django.conf import settings
-
 from pathlib import Path
-from datetime import datetime
+
 import re
 import sqlite3
 import os
@@ -20,8 +18,6 @@ settings.configure(USE_TZ=True, TIME_ZONE="UTC")
 
 filename = Path("./example/sodapoppin-316092067675.log")
 
-
-chat_message_pattern = r"^\[(\d{2}:\d{2}:\d{2})\]\s+(\w+):\s+(.+)$"
 
 patterns = {
     "stream_live": re.compile(r"^\[(\d{2}:\d{2}:\d{2})\]\s+(\w+)\s+is live!$"),
@@ -181,8 +177,6 @@ def extract_non_matching_message_to_file():
     print(pattern_counts)
 
     return
-
-
 
 
 def main():

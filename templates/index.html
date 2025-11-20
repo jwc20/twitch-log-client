@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head><title>Index Page</title></head>
+<body>
+    {% load tlc %}
+    {% block content %}
+    {% for message in messages %}
+        <p>{{ message.timestamp|date:"H:i:s" }} - {{ message.username }}: {{ message.message_text }}</p>
+    {% endfor %}
+    {% endblock %}
+</body>
+</html>
