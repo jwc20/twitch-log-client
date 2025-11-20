@@ -1,4 +1,9 @@
+from contextlib import asynccontextmanager
 from typing import Annotated
+
+from starlette.middleware.cors import CORSMiddleware
+import httpx
+from starlette.middleware import Middleware
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
@@ -6,6 +11,9 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 import uuid
 from pathlib import Path
 from datetime import datetime
+
+
+##############################################################################
 
 
 def find_project_root(marker=".git"):
@@ -30,11 +38,18 @@ class ChatMessage(SQLModel, table=True):
     message_type: str
 
 
+##############################################################################
+
+
 sqlite_url = f"sqlite:///{db_path}"
 engine = create_engine(sqlite_url)
 
 connect_args = {"check_same_thread": False}
 engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
 
 
 def get_session():
@@ -44,12 +59,43 @@ def get_session():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-app = FastAPI()
+##############################################################################
 
 
-@app.on_event("startup")
-def on_startup():
-    SQLModel.metadata.create_all(engine)
+def add_cors_middleware(app):
+    return CORSMiddleware(
+        app=app,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
+def add_logging_middleware(app):
+    async def middleware(scope, receive, send):
+        path = scope["path"]
+        print("Request:", path)
+        await app(scope, receive, send)
+
+    return middleware
+
+
+##############################################################################
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+    print("shutting down")
+
+
+app = FastAPI(lifespan=lifespan)
+app.add_middleware(add_cors_middleware)
+app.add_middleware(add_logging_middleware)
+
+
+##############################################################################
 
 
 @app.get("/")
