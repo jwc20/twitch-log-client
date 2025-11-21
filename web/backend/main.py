@@ -1,11 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel
-from starlette.middleware.cors import CORSMiddleware
-
-# import httpx
-# from starlette.middleware import Middleware
+from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from sqlmodel import Field, Session, SQLModel, create_engine, select
@@ -44,8 +40,6 @@ class ChatMessage(SQLModel, table=True):
 
 
 sqlite_url = f"sqlite:///{db_path}"
-engine = create_engine(sqlite_url)
-
 connect_args = {"check_same_thread": False}
 engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
 
@@ -64,21 +58,25 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 ##############################################################################
 
+def add_cors_middleware(fastapi_app):
+    return CORSMiddleware(
+        app=fastapi_app,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     create_db_and_tables()
     yield
     print("shutting down")
 
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# noinspection PyTypeChecker
+app.add_middleware(add_cors_middleware)
 
 
 @app.middleware("http")
@@ -94,35 +92,35 @@ async def add_logging_middleware(request: Request, call_next):
 
 @app.get("/chats/", response_model=list[ChatMessage])
 async def read_chats(
-    session: SessionDep,
-    channel_name: Annotated[str | None, Query()] = None,
-    username: Annotated[str | None, Query()] = None,
-    message_type: Annotated[str | None, Query()] = None,
-    start_datetime: Optional[datetime] = Query(None),
-    end_datetime: Optional[datetime] = Query(None),
-    offset: int = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 100,
-    order_by: Annotated[
-        Literal["timestamp", "username", "message_type"], Query()
-    ] = "timestamp",
-    desc: bool = False,
+        session: SessionDep,
+        channel_name: Annotated[str | None, Query()] = None,
+        username: Annotated[str | None, Query()] = None,
+        message_type: Annotated[str | None, Query()] = None,
+        start_datetime: Optional[datetime] = Query(None),
+        end_datetime: Optional[datetime] = Query(None),
+        offset: int = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 100,
+        order_by: Annotated[
+            Literal["timestamp", "username", "message_type"], Query()
+        ] = "timestamp",
+        desc: bool = False,
 ) -> list[ChatMessage]:
     stmt = select(ChatMessage)
 
     if channel_name is not None:
-        stmt = stmt.where(ChatMessage.channel_name == channel_name)
+        stmt = stmt.where(getattr(ChatMessage, "channel_name") == channel_name)
 
     if username is not None:
-        stmt = stmt.where(ChatMessage.username == username)
+        stmt = stmt.where(getattr(ChatMessage, "username") == username)
 
     if message_type is not None:
-        stmt = stmt.where(ChatMessage.message_type == message_type)
+        stmt = stmt.where(getattr(ChatMessage, "message_type") == message_type)
 
     if start_datetime is not None:
-        stmt = stmt.where(ChatMessage.timestamp >= start_datetime)
+        stmt = stmt.where(getattr(ChatMessage, "timestamp") >= start_datetime)
 
     if end_datetime is not None:
-        stmt = stmt.where(ChatMessage.timestamp <= end_datetime)
+        stmt = stmt.where(getattr(ChatMessage, "timestamp") <= end_datetime)
 
     if desc:
         stmt = stmt.order_by(getattr(ChatMessage, order_by).desc())
@@ -132,4 +130,4 @@ async def read_chats(
     stmt = stmt.offset(offset).limit(limit)
 
     results = session.exec(stmt).all()
-    return results
+    return list(results)
